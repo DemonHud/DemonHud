@@ -1,0 +1,283 @@
+-- Key System Setup
+local correctKey = "yaboidemon200"  -- The key/password for access
+local isKeyEntered = false  -- Variable to track if the key has been entered correctly
+
+-- Create the main window using OrionLib
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
+
+local Window = OrionLib:MakeWindow({
+    Name = "Demon Hud",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "DemonHudConfig",
+    IntroText = "Enter your key to proceed"
+})
+
+-- Create a Tab for Key System
+local KeyTab = Window:MakeTab({
+    Name = "Key System",
+    Icon = "rbxassetid://4483345998",  -- Any icon you prefer
+    PremiumOnly = false
+})
+
+-- TextBox for the Key input
+KeyTab:AddTextbox({
+    Name = "Enter Key",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(input)
+        if input == correctKey then
+            isKeyEntered = true
+            OrionLib:MakeNotification({
+                Name = "Access Granted",
+                Content = "You have successfully entered the key!",
+                Image = "rbxassetid://4483345998",  -- Any image you prefer
+                Time = 3
+            })
+            enableFeatures()
+        else
+            OrionLib:MakeNotification({
+                Name = "Access Denied",
+                Content = "Incorrect key, please try again.",
+                Image = "rbxassetid://4483345998",  -- Any image you prefer
+                Time = 3
+            })
+        end
+    end
+})
+
+-- Function to enable features after successful key entry
+function enableFeatures()
+    -- Create WalkSpeed UI Tab
+    local walkSpeedTab = Window:MakeTab({
+        Name = "WalkSpeed",
+        Icon = "rbxassetid://4483345998",  -- Choose an icon of your choice
+        PremiumOnly = false
+    })
+
+    walkSpeedTab:AddSlider({
+        Name = "WalkSpeed Value",
+        Min = 16,
+        Max = 500,
+        Default = 16,
+        Color = Color3.fromRGB(255, 100, 100),
+        Increment = 1,
+        ValueName = "Speed",
+        Callback = function(Value)
+            local player = game.Players.LocalPlayer
+            if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = Value
+            end
+        end
+    })
+
+    -- Create Super Jump Tab
+    local jumpTab = Window:MakeTab({
+        Name = "Super Jump",
+        Icon = "rbxassetid://4483345998", -- Icon for Super Jump tab
+        PremiumOnly = false
+    })
+
+    jumpTab:AddSlider({
+        Name = "JumpPower Value",
+        Min = 50,
+        Max = 5000,
+        Default = 50,
+        Color = Color3.fromRGB(100, 255, 100),
+        Increment = 10,
+        ValueName = "JumpPower",
+        Callback = function(Value)
+            local player = game.Players.LocalPlayer
+            if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.JumpPower = Value
+            end
+        end
+    })
+
+    -- Noclip Tab
+    local noclipTab = Window:MakeTab({
+        Name = "Noclip",
+        Icon = "rbxassetid://4483345998",  -- Choose an icon of your choice
+        PremiumOnly = false
+    })
+
+    local noclipEnabled = false  -- Track if noclip is enabled
+
+    -- Function to enable or disable noclip
+    local function toggleNoclip(enabled)
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+
+        if character and character:FindFirstChild("Humanoid") then
+            local humanoid = character:FindFirstChild("Humanoid")
+            local parts = {"Head", "Torso", "HumanoidRootPart", "LeftLeg", "RightLeg", "LeftArm", "RightArm"}
+            
+            if enabled then
+                -- Disable collisions for each part
+                for _, partName in pairs(parts) do
+                    local part = character:FindFirstChild(partName)
+                    if part then
+                        part.CanCollide = false
+                    end
+                end
+                print("Noclip enabled")
+            else
+                -- Re-enable collisions for each part
+                for _, partName in pairs(parts) do
+                    local part = character:FindFirstChild(partName)
+                    if part then
+                        part.CanCollide = true
+                    end
+                end
+                print("Noclip disabled")
+            end
+        end
+    end
+
+    noclipTab:AddToggle({
+        Name = "Enable Noclip",
+        Default = false,
+        Callback = function(enabled)
+            noclipEnabled = enabled
+            toggleNoclip(noclipEnabled)
+        end
+    })
+
+    -- Advanced Aimbot Tab
+    local aimbotTab = Window:MakeTab({
+        Name = "Aimbot",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    local aimbotEnabled = false
+    local targetPart = "Head"
+    local fovRadius = 100
+
+    aimbotTab:AddToggle({
+        Name = "Enable Aimbot",
+        Default = false,
+        Callback = function(enabled)
+            aimbotEnabled = enabled
+            if aimbotEnabled then
+                print("Aimbot activated!")
+            else
+                print("Aimbot deactivated.")
+            end
+        end
+    })
+
+    aimbotTab:AddDropdown({
+        Name = "Target Part",
+        Default = "Head",
+        Options = { "Head", "Torso", "HumanoidRootPart" },
+        Callback = function(part)
+            targetPart = part
+        end
+    })
+
+    aimbotTab:AddSlider({
+        Name = "FOV Radius",
+        Min = 50,
+        Max = 500,
+        Default = 100,
+        Color = Color3.fromRGB(255, 255, 100),
+        Increment = 1,
+        ValueName = "FOV",
+        Callback = function(value)
+            fovRadius = value
+        end
+    })
+
+    -- Aimbot Logic
+    local function getClosestTarget()
+        local player = game.Players.LocalPlayer
+        local mouse = player:GetMouse()
+        local camera = workspace.CurrentCamera
+        local closestPlayer = nil
+        local shortestDistance = fovRadius
+
+        for _, target in ipairs(game.Players:GetPlayers()) do
+            if target ~= player and target.Character and target.Character:FindFirstChild(targetPart) then
+                local part = target.Character:FindFirstChild(targetPart)
+                if part then
+                    local screenPosition, onScreen = camera:WorldToScreenPoint(part.Position)
+                    if onScreen then
+                        local distance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(screenPosition.X, screenPosition.Y)).Magnitude
+                        if distance < shortestDistance then
+                            shortestDistance = distance
+                            closestPlayer = target
+                        end
+                    end
+                end
+            end
+        end
+
+        return closestPlayer
+    end
+
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if aimbotEnabled then
+            local player = game.Players.LocalPlayer
+            local target = getClosestTarget()
+
+            if target and target.Character and target.Character:FindFirstChild(targetPart) then
+                local camera = workspace.CurrentCamera
+                local targetPosition = target.Character[targetPart].Position
+                camera.CFrame = CFrame.new(camera.CFrame.Position, targetPosition)
+            end
+        end
+    end)
+
+    -- ESP Features
+    local espTab = Window:MakeTab({
+        Name = "ESP Features",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    espTab:AddToggle({
+        Name = "Player ESP",
+        Default = false,
+        Callback = function(enabled)
+            if enabled then
+                for _, player in pairs(game.Players:GetPlayers()) do
+                    if player ~= game.Players.LocalPlayer then
+                        local highlight = Instance.new("Highlight", player.Character or player.CharacterAdded:Wait())
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    end
+                end
+            else
+                for _, player in pairs(game.Players:GetPlayers()) do
+                    if player.Character and player.Character:FindFirstChild("Highlight") then
+                        player.Character.Highlight:Destroy()
+                    end
+                end
+            end
+        end
+    })
+
+    -- Cash Spawning Tab
+    local cashTab = Window:MakeTab({
+        Name = "Cash Spawner",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    cashTab:AddButton({
+        Name = "Spawn Cash",
+        Callback = function()
+            local player = game.Players.LocalPlayer
+            if player then
+                -- Add cash to player's wallet (pseudo-code as implementation depends on game mechanics)
+                print("Cash added to wallet!")
+                -- Replace the following line with actual code to spawn cash:
+                -- player.Cash.Value = player.Cash.Value + 1000
+            end
+        end
+    })
+end
+
+-- Initialize the UI
+OrionLib:Init()
